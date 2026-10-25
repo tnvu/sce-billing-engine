@@ -19,8 +19,8 @@ __allocations: &__allocations
     - [WINTER, 14, 11.9, 20.9, 2.6, 3.0]
     - [WINTER, 15,  8.8, 16.1, 2.6, 3.0]
     - [WINTER, 16, 12.5, 23.3, 2.6, 3.0]
-  MEDICAL_BASELINE_ALLOCATION: 16.5 # kWh/day
-  MEDICAL_DISCOUNT: -0.11 # %
+MEDICAL_BASELINE_ALLOCATION: 16.5 # kWh/day
+MEDICAL_DISCOUNT: -0.11 # %
 
 __rates_table_tou_d_header: &__rates_table_tou_d_header [name, Season, TOUPeriod, trans, distrbtn, NSGC, NDC, PPPC, CIA, WFC, DWRA, PUCRF, Total]
 
