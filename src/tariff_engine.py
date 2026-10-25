@@ -1,7 +1,8 @@
 import datetime
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from enum import StrEnum
-from typing import Sequence
+from typing import Mapping, Sequence
 
 from green_button import IntervalBlock
 
@@ -19,21 +20,56 @@ class DayType(StrEnum):
     WEEKDAY         = "WEEKDAY"
     WEEKEND_HOLIDAY = "WEEKEND_HOLIDAY"
 
+class DiscountProgram(StrEnum):
+    CARE = "CARE"
+    FERA = "FERA"
+
 ENUM_VALIDATORS = {
-    'Season'    : Season,
-    'TOUPeriod' : TOUPeriod,
-    'DayType'   : DayType
+    'Season'          : Season,
+    'TOUPeriod'       : TOUPeriod,
+    'DayType'         : DayType,
+    'DiscountProgram' : DiscountProgram
 }
 
 class ResidentialPlan(ABC):
-    def __init__(self, tariffs: dict, plan: str, **kwargs):
+    def __init__(self,
+                 tariffs: dict,
+                 plan: str,
+                 medical_baseline_units = 0,
+                 discount_program: str = "",
+                 **kwargs):
         super().__init__(**kwargs)
         self.tariffs = tariffs
         self.plan = tariffs[plan]
+        self.medical_baseline_units = medical_baseline_units
+        self.discount_program = DiscountProgram(discount_program) if discount_program else None
+
         self.rates_table = self.parse_table(self.plan['rates_table'])
 
+    def get_row(self, name: str, season=None, tou_period=None):
+        rows = [r for r in self.rates_table if r['name'] == name]
+        if season is not None:
+            rows = [r for r in rows if r['Season'] == season]
+        if tou_period is not None:
+            rows = [r for r in rows if r['TOUPeriod'] == tou_period]
+        if len(rows) != 1:
+            raise KeyError(f"Number of rows != 1: {rows}")
+        result = rows[0]
+        return result
+
+    def get_base_services_charge_rate(self):
+        base_services_charge_row = self.get_row('base_services_charge')
+        rate = base_services_charge_row['Total']
+        if self.discount_program == DiscountProgram.CARE:
+            rate -= 0.209 # CARE surcharge
+            rate -= 0.069 # Base Services Charge Surcharge
+            rate *= (1 + self.tariffs['CARE_discount'])
+            rate -= 0.168 # Base Services Charge Discount
+        return rate
+
     @abstractmethod
-    def calculate_bill(self, billing_period: Sequence[IntervalBlock]) -> float:
+    def calculate_bill(self, billing_period: Sequence[IntervalBlock]
+                       ) -> float:
         pass
 
     @staticmethod
@@ -69,5 +105,18 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
         super().__init__(**kwargs)
         self.allocations = self.parse_table(self.plan['allocations'])
 
-    def calculate_bill(self, billing_period: Sequence[IntervalBlock]) -> float:
-        return 0.0
+    def calculate_bill(self, billing_period: Sequence[IntervalBlock]
+                       ) -> float:
+        base_services_charge: Mapping[float, int] = defaultdict(lambda: 0)
+
+        for block in billing_period:
+            bsc_rate = self.get_base_services_charge_rate()
+            base_services_charge[bsc_rate] += 1
+
+        total_base_services_charge = 0.0
+        for rate, num_days in base_services_charge.items():
+            total_base_services_charge += rate * num_days
+
+        total = sum([total_base_services_charge])
+            
+        return total
