@@ -58,8 +58,8 @@ class ResidentialPlan(ABC):
         return result
 
     def get_base_services_charge_rate(self):
-        base_services_charge_row = self.get_row('base_services_charge')
-        rate = base_services_charge_row['Total']
+        row = self.get_row('base_services_charge')
+        rate = row['Total']
         if self.discount_program == DiscountProgram.CARE:
             rate -= 0.209 # CARE surcharge
             rate -= 0.069 # Base Services Charge Surcharge
@@ -90,6 +90,12 @@ class ResidentialPlan(ABC):
             validated_table.append(validated_row)
         return validated_table
 
+    @staticmethod
+    def get_season(date: datetime.date):
+        if 6 <= date.month <= 9:
+            return Season.SUMMER
+        return Season.WINTER
+
 
 class ScheduleTOUDPlan(ResidentialPlan):
     def __init__(self, **kwargs):
@@ -101,22 +107,52 @@ class ScheduleTOUDPlan(ResidentialPlan):
                 else:            row[k] = datetime.time(row[k])
                 
 class TOUDStandardPlan(ScheduleTOUDPlan):
-    def __init__(self, **kwargs):
+    def __init__(self, region: int, **kwargs):
         super().__init__(**kwargs)
+        self.region = region
         self.allocations = self.parse_table(self.plan['allocations'])
+
+    def get_allocation(self, date, alloc_type='baseline_basic') -> float:
+        season = self.get_season(date)
+        alloc = None
+        for row in self.allocations:
+            if row['Season'] == season and row['region'] == self.region:
+                alloc = row[alloc_type]
+        if alloc is None:
+            raise KeyError(f"Unable to find allocation for DATE={date}, "
+                           f"SEASON={season}, ALLOC_TYPE={alloc_type}")
+        alloc += self.medical_baseline_units * \
+            self.tariffs['MEDICAL_BASELINE_ALLOCATION']
+        return alloc
+
+    def get_baseline_credit_rate(self, date):
+        row = self.get_row('baseline_credit')
+        rate = row['Total']
+        return rate
 
     def calculate_bill(self, billing_period: Sequence[IntervalBlock]
                        ) -> float:
         base_services_charge: Mapping[float, int] = defaultdict(lambda: 0)
-
+        baseline_credit: Mapping[float, list[float]] = defaultdict(lambda: [0.0, 0.0])
+        
         for block in billing_period:
+            date = block.start
+
             bsc_rate = self.get_base_services_charge_rate()
             base_services_charge[bsc_rate] += 1
+
+            bc_rate = self.get_baseline_credit_rate(date)
+            baseline_credit[bc_rate][0] += block.delivered_kwh()
+            baseline_credit[bc_rate][1] += self.get_allocation(date)
 
         total_base_services_charge = 0.0
         for rate, num_days in base_services_charge.items():
             total_base_services_charge += rate * num_days
+        total_baseline_credit = 0.0
+        for rate, (usage, alloc) in baseline_credit.items():
+            total_baseline_credit += rate * min(usage, alloc)
 
-        total = sum([total_base_services_charge])
+        total = sum([total_base_services_charge,
+                     total_baseline_credit])
             
         return total
