@@ -1,0 +1,120 @@
+__allocations: &__allocations
+  header: [Season, region, baseline_basic, baseline_all_electric, hpwh_basic, hpwh_all_electric] # hpwh: Heat Pump Water Heater
+  rows: # kWh per day
+    - [SUMMER,  5, 16.5, 15.6, 1.9, 1.9]
+    - [SUMMER,  6, 11.6,  8.5, 1.9, 1.9]
+    - [SUMMER,  8, 13.1, 10.0, 1.9, 1.9]
+    - [SUMMER,  9, 17.1, 12.9, 1.9, 1.9]
+    - [SUMMER, 10, 19.8, 16.0, 1.9, 1.9]
+    - [SUMMER, 13, 22.2, 22.7, 1.9, 1.9]
+    - [SUMMER, 14, 20.1, 19.2, 1.9, 1.9]
+    - [SUMMER, 15, 41.1, 23.3, 1.9, 1.9]
+    - [SUMMER, 16, 14.9, 13.5, 1.9, 1.9]
+    - [WINTER,  5, 18.3, 24.2, 2.6, 3.0]
+    - [WINTER,  6, 10.5, 11.8, 2.6, 3.0]
+    - [WINTER,  8,  9.7, 11.6, 2.6, 3.0]
+    - [WINTER,  9, 11.5, 13.2, 2.6, 3.0]
+    - [WINTER, 10, 11.6, 15.2, 2.6, 3.0]
+    - [WINTER, 13, 11.5, 19.6, 2.6, 3.0]
+    - [WINTER, 14, 11.9, 20.9, 2.6, 3.0]
+    - [WINTER, 15,  8.8, 16.1, 2.6, 3.0]
+    - [WINTER, 16, 12.5, 23.3, 2.6, 3.0]
+  MEDICAL_BASELINE_ALLOCATION: 16.5 # kWh/day
+  MEDICAL_DISCOUNT: -0.11 # %
+
+__rates_table_tou_d_header: &__rates_table_tou_d_header [name, Season, TOUPeriod, trans, distrbtn, NSGC, NDC, PPPC, CIA, WFC, DWRA, PUCRF, Total]
+
+__rates_table_tou_d_4_9pm: &__rates_table_tou_d_4_9pm
+  header: *__rates_table_tou_d_header
+  rows:
+    - [energy_charge_generation,  SUMMER,        ON_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.25321] # $/kWh
+    - [energy_charge_generation,  SUMMER,       MID_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.13326] # $/kWh
+    - [energy_charge_generation,  SUMMER,       OFF_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.07396] # $/kWh
+    - [energy_charge_generation,  WINTER,       MID_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.17956] # $/kWh
+    - [energy_charge_generation,  WINTER,       OFF_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.10245] # $/kWh
+    - [energy_charge_generation,  WINTER, SUPER_OFF_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.08452] # $/kWh
+    - [energy_charge_delivery,    SUMMER,        ON_PEAK, 0.02481,   0.28981, 0.00829, 0.00003, 0.00171, 0.00000, 0.00591, 0.00000, 0.00100,   0.33156] # $/kWh
+    - [energy_charge_delivery,    SUMMER,       MID_PEAK, 0.02481,   0.28981, 0.00829, 0.00003, 0.00171, 0.00000, 0.00591, 0.00000, 0.00100,   0.33156] # $/kWh
+    - [energy_charge_delivery,    SUMMER,       OFF_PEAK, 0.02481,   0.23095, 0.00829, 0.00003, 0.00171, 0.00000, 0.00591, 0.00000, 0.00100,   0.27270] # $/kWh
+    - [energy_charge_delivery,    WINTER,       MID_PEAK, 0.02481,   0.28981, 0.00829, 0.00003, 0.00171, 0.00000, 0.00591, 0.00000, 0.00100,   0.33156] # $/kWh
+    - [energy_charge_delivery,    WINTER,       OFF_PEAK, 0.02481,   0.23095, 0.00829, 0.00003, 0.00171, 0.00000, 0.00591, 0.00000, 0.00100,   0.27270] # $/kWh
+    - [energy_charge_delivery,    WINTER, SUPER_OFF_PEAK, 0.02481,   0.20978, 0.00829, 0.00003, 0.00171, 0.00000, 0.00591, 0.00000, 0.00100,   0.25153] # $/kWh
+    - [baseline_credit,             null,           null,    null,  -0.10099,    null,    null,    null,    null,    null,    null,    null,  -0.10099] # $/kWh
+    - [fixed_recovery_charge,       null,           null,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.00619] # $/kWh
+    - [MCAM_charge,                 null,           null,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.00223] # $/kWh
+    - [base_services_charge,        null,           null,    null,   0.42900, 0.00000, 0.00000, 0.36500,    null,    null,    null,    null,   0.79400] # $/Meter/Day
+    - [bsc_adjustment,              null,           null,    null,  -0.32700,    null,    null,    null,    null,    null,    null,    null,  -0.32700] # $/Meter/Day
+    - [california_climate_credit,   null,           null,    null, -36.00000,    null,    null,    null,    null,    null,    null,    null, -36.00000]
+    - [CARE_discount,               null,           null,    null,   1.00000,    null,    null,    null,    null,    null,    null,    null,   1.00000] # %
+    - [FERA_discount,               null,           null,    null,   1.00000,    null,    null,    null,    null,    null,    null,    null,   1.00000] # %
+
+
+__rates_table_tou_d_5_8pm: &__rates_table_tou_d_5_8pm
+  header: *__rates_table_tou_d_header
+  rows:
+    - [energy_charge_generation,  SUMMER,        ON_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.41155] # $/kWh
+    - [energy_charge_generation,  SUMMER,       MID_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.21138] # $/kWh
+    - [energy_charge_generation,  SUMMER,       OFF_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.06298] # $/kWh
+    - [energy_charge_generation,  WINTER,       MID_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.27579] # $/kWh
+    - [energy_charge_generation,  WINTER,       OFF_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.09965] # $/kWh
+    - [energy_charge_generation,  WINTER, SUPER_OFF_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.07016] # $/kWh
+    - [energy_charge_delivery,    SUMMER,        ON_PEAK, 0.02481,   0.29049, 0.00829, 0.00003, 0.00171, 0.00000, 0.00591, 0.00000, 0.00100,   0.33224] # $/kWh
+    - [energy_charge_delivery,    SUMMER,       MID_PEAK, 0.02481,   0.29049, 0.00829, 0.00003, 0.00171, 0.00000, 0.00591, 0.00000, 0.00100,   0.33224] # $/kWh
+    - [energy_charge_delivery,    SUMMER,       OFF_PEAK, 0.02481,   0.24056, 0.00829, 0.00003, 0.00171, 0.00000, 0.00591, 0.00000, 0.00100,   0.28231] # $/kWh
+    - [energy_charge_delivery,    WINTER,       MID_PEAK, 0.02481,   0.29049, 0.00829, 0.00003, 0.00171, 0.00000, 0.00591, 0.00000, 0.00100,   0.33224] # $/kWh
+    - [energy_charge_delivery,    WINTER,       OFF_PEAK, 0.02481,   0.24056, 0.00829, 0.00003, 0.00171, 0.00000, 0.00591, 0.00000, 0.00100,   0.28231] # $/kWh
+    - [energy_charge_delivery,    WINTER, SUPER_OFF_PEAK, 0.02481,   0.21352, 0.00829, 0.00003, 0.00171, 0.00000, 0.00591, 0.00000, 0.00100,   0.25527] # $/kWh
+    - [baseline_credit,             null,           null,    null,  -0.10099,    null,    null,    null,    null,    null,    null,    null,  -0.10099] # $/kWh
+    - [fixed_recovery_charge,       null,           null,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.00619] # $/kWh
+    - [MCAM_charge,                 null,           null,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.00223] # $/kWh
+    - [base_services_charge,        null,           null,    null,   0.42900, 0.00000, 0.00000, 0.36500,    null,    null,    null,    null,   0.79400] # $/Meter/Day
+    - [bsc_adjustment,              null,           null,    null,  -0.32700,    null,    null,    null,    null,    null,    null,    null,  -0.32700] # $/Meter/Day
+    - [california_climate_credit,   null,           null,    null, -36.00000,    null,    null,    null,    null,    null,    null,    null, -36.00000]
+    - [CARE_discount,               null,           null,    null,   1.00000,    null,    null,    null,    null,    null,    null,    null,   1.00000] # %
+    - [FERA_discount,               null,           null,    null,   1.00000,    null,    null,    null,    null,    null,    null,    null,   1.00000] # %
+
+__tou_periods_header: &__tou_periods_header [DayType, Season, TOUPeriod, start, end]
+__tou_periods_tou_d_4_9pm_prime: &__tou_periods_tou_d_4_9pm_prime
+  header: *__tou_periods_header
+  rows:
+    - [WEEKDAY,         SUMMER, OFF_PEAK,        0, 16]
+    - [WEEKDAY,         SUMMER, ON_PEAK,        16, 21]
+    - [WEEKDAY,         SUMMER, OFF_PEAK,       21, 24]
+    - [WEEKDAY,         WINTER, OFF_PEAK,        0,  8]
+    - [WEEKDAY,         WINTER, SUPER_OFF_PEAK,  8, 16]
+    - [WEEKDAY,         WINTER, MID_PEAK,       16, 21]
+    - [WEEKDAY,         WINTER, OFF_PEAK,       21, 24]
+    - [WEEKEND_HOLIDAY, SUMMER, OFF_PEAK,        0, 16]
+    - [WEEKEND_HOLIDAY, SUMMER, MID_PEAK,       16, 21]
+    - [WEEKEND_HOLIDAY, SUMMER, OFF_PEAK,       21, 24]
+    - [WEEKEND_HOLIDAY, WINTER, OFF_PEAK,        0,  8]
+    - [WEEKEND_HOLIDAY, WINTER, SUPER_OFF_PEAK,  8, 16]
+    - [WEEKEND_HOLIDAY, WINTER, MID_PEAK,       16, 21]
+    - [WEEKEND_HOLIDAY, WINTER, OFF_PEAK,       21, 24]
+__tou_periods_tou_d_5_8pm_prime: &__tou_periods_tou_d_5_8pm_prime
+  header: *__tou_periods_header
+  rows:
+    - [WEEKDAY,         SUMMER, OFF_PEAK,        0, 17]
+    - [WEEKDAY,         SUMMER, ON_PEAK,        17, 20]
+    - [WEEKDAY,         SUMMER, OFF_PEAK,       20, 24]
+    - [WEEKDAY,         WINTER, OFF_PEAK,        0,  8]
+    - [WEEKDAY,         WINTER, SUPER_OFF_PEAK,  8, 17]
+    - [WEEKDAY,         WINTER, MID_PEAK,       17, 20]
+    - [WEEKDAY,         WINTER, OFF_PEAK,       20, 24]
+    - [WEEKEND_HOLIDAY, SUMMER, OFF_PEAK,        0, 17]
+    - [WEEKEND_HOLIDAY, SUMMER, MID_PEAK,       17, 20]
+    - [WEEKEND_HOLIDAY, SUMMER, OFF_PEAK,       20, 24]
+    - [WEEKEND_HOLIDAY, WINTER, OFF_PEAK,        0,  8]
+    - [WEEKEND_HOLIDAY, WINTER, SUPER_OFF_PEAK,  8, 17]
+    - [WEEKEND_HOLIDAY, WINTER, MID_PEAK,       17, 20]
+    - [WEEKEND_HOLIDAY, WINTER, OFF_PEAK,       20, 24]
+
+TOU_D_4_9PM:
+  allocations: *__allocations
+  rates_table: *__rates_table_tou_d_4_9pm
+  tou_periods: *__tou_periods_tou_d_4_9pm_prime
+
+TOU_D_5_8PM:
+  allocations: *__allocations
+  rates_table: *__rates_table_tou_d_5_8pm
+  tou_periods: *__tou_periods_tou_d_4_9pm_prime
