@@ -42,7 +42,8 @@ class ResidentialPlan(ABC):
         self.tariffs = tariffs
         self.plan = tariffs[plan]
         self.medical_baseline_units = medical_baseline_units
-        self.discount_program = DiscountProgram(discount_program) if discount_program else None
+        self.discount_program = DiscountProgram(discount_program) \
+            if discount_program else None
 
         self.rates_table = self.parse_table(self.plan['rates_table'])
 
@@ -68,8 +69,8 @@ class ResidentialPlan(ABC):
         return rate
 
     @abstractmethod
-    def calculate_bill(self, billing_period: Sequence[IntervalBlock]
-                       ) -> float:
+    def calculate_bill(self,
+                       billing_period: Sequence[IntervalBlock]) -> float:
         pass
 
     @staticmethod
@@ -96,7 +97,6 @@ class ResidentialPlan(ABC):
             return Season.SUMMER
         return Season.WINTER
 
-
 class ScheduleTOUDPlan(ResidentialPlan):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -105,6 +105,60 @@ class ScheduleTOUDPlan(ResidentialPlan):
             for k in ('start', 'end'):
                 if row[k] == 24: row[k] = datetime.time.max
                 else:            row[k] = datetime.time(row[k])
+
+    def get_tou_periods(self, date: datetime.date):
+        day_type = self.get_day_type(date)
+        season = self.get_season(date)
+        results = [row for row in self.tou_periods
+                   if row['DayType'] == day_type and row['Season'] == season]
+        return results
+
+    __holidays : dict[int, list[datetime.date]] = defaultdict()
+    @classmethod
+    def holidays(cls, year: int) -> list[datetime.date]:
+        if year in cls.__holidays: return cls.__holidays[year]
+
+        one_day = datetime.timedelta(days=1)
+        holidays: list[datetime.date] = [
+            datetime.date(year, 1, 1),   # New Year's Day
+            datetime.date(year, 7, 4),   # Independence Day
+            datetime.date(year, 11, 11), # Veteran's Day
+            datetime.date(year, 12, 25)  # Christmas Day
+            ]
+
+        # President's Day - 3rd Monday in Feb
+        first_monday = datetime.date(year, 2, 1)
+        while first_monday.weekday() != 0: first_monday += one_day
+        holidays.append(first_monday + datetime.timedelta(days=14))
+
+        # Memorial Day - last Monday in May
+        memorial_day = datetime.date(year, 5, 31)
+        while memorial_day.weekday() != 0: memorial_day -= one_day
+        holidays.append(memorial_day)
+
+        # Labor Day - 1st Monday in Sep
+        first_monday = datetime.date(year, 9, 1)
+        while first_monday.weekday() != 0: first_monday += one_day
+        holidays.append(first_monday)
+
+        # Thanksgiving Day - 4th Thursday in Nov
+        first_thursday = datetime.date(year, 11, 1)
+        while first_thursday.weekday() != 3: first_thursday += one_day
+        holidays.append(first_thursday + datetime.timedelta(days=21))
+
+        # Move Sunday holidays to Monday
+        holidays = [d + one_day if d.weekday() == 6 else d for d in holidays]
+
+        cls.__holidays[year] = holidays
+        return holidays
+
+    @classmethod
+    def get_day_type(cls, date: datetime.date):
+        if date.weekday() in (5, 6) or date in cls.holidays(date.year):
+            return DayType.WEEKEND_HOLIDAY
+        return DayType.WEEKDAY
+
+
                 
 class TOUDStandardPlan(ScheduleTOUDPlan):
     def __init__(self, region: int, **kwargs):
@@ -130,20 +184,40 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
         rate = row['Total']
         return rate
 
+    def get_energy_charge_delivery_rate(self, season, tou_period):
+        energy_charge_delivery_row = self.get_row(
+            'energy_charge_delivery', season, tou_period)
+        rate = energy_charge_delivery_row['Total']
+        if self.discount_program == DiscountProgram.CARE:
+            rate -= energy_charge_delivery_row['WFC'] # Wildfire Fund Non-Bypassable Charge
+        else:
+            rate += self.get_row('fixed_recovery_charge')['Total']
+            rate += self.get_row('MCAM_charge')['Total']
+        return rate
+
     def calculate_bill(self, billing_period: Sequence[IntervalBlock]
                        ) -> float:
         base_services_charge: Mapping[float, int] = defaultdict(lambda: 0)
-        baseline_credit: Mapping[float, list[float]] = defaultdict(lambda: [0.0, 0.0])
+        baseline_credit: Mapping[
+            float, list[float]] = defaultdict(lambda: [0.0, 0.0])
+        energy_charge_delivery: Mapping[
+            tuple[Season, TOUPeriod, float], float
+            ] = defaultdict(lambda: 0.0)
         
         for block in billing_period:
             date = block.start
-
+            # Base Services Charge
             bsc_rate = self.get_base_services_charge_rate()
             base_services_charge[bsc_rate] += 1
-
+            # Baseline Credit
             bc_rate = self.get_baseline_credit_rate(date)
             baseline_credit[bc_rate][0] += block.delivered_kwh()
             baseline_credit[bc_rate][1] += self.get_allocation(date)
+            # Energy Charge Delivery
+            for row in self.get_tou_periods(date):
+                (season, tou_period, start, end) = (row['Season'], row['TOUPeriod'], row['start'], row['end'])
+                rate = self.get_energy_charge_delivery_rate(season, tou_period)
+                energy_charge_delivery[(season, tou_period, rate)] += block.delivered_kwh(start, end)
 
         total_base_services_charge = 0.0
         for rate, num_days in base_services_charge.items():
@@ -151,8 +225,14 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
         total_baseline_credit = 0.0
         for rate, (usage, alloc) in baseline_credit.items():
             total_baseline_credit += rate * min(usage, alloc)
-
+        total_energy_charge_delivery: Mapping[
+            tuple[Season, TOUPeriod],
+            list[float]] = defaultdict(lambda: [0, 0])
+        for (season, tou_period, rate), kwh in energy_charge_delivery.items():
+            total_energy_charge_delivery[(season, tou_period)][0] += kwh
+            total_energy_charge_delivery[(season, tou_period)][1] += rate * kwh
         total = sum([total_base_services_charge,
-                     total_baseline_credit])
-            
+                     total_baseline_credit,
+                     sum([v[1] for v in total_energy_charge_delivery.values()])
+                     ])            
         return total
