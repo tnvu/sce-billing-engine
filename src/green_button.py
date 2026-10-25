@@ -18,7 +18,10 @@ class IntervalBlock:
     duration: datetime.timedelta
     readings: Sequence[IntervalReading]
 
-    def delivered_kwh(self, start=datetime.time.min, end=datetime.time.max) -> float:
+    def delivered_kwh(self,
+                      start: datetime.time = datetime.time.min,
+                      end: datetime.time = datetime.time.max) -> float:
+        
         kwh = 0.0
         for reading in self.readings:
             if start <= reading.start < end:
@@ -73,9 +76,12 @@ class GreenButtonData:
         final_blocks: dict[datetime.date, IntervalBlock] = defaultdict()
         for date, readings in accumaltor.items():
             sorted_readings = sorted(readings, key=lambda x: x.start)
-            end = datetime.datetime.combine(datetime.date.min, sorted_readings[-1].start)
+            end = datetime.datetime.combine(
+                datetime.date.min, sorted_readings[-1].start)
             end += sorted_readings[-1].duration
-            start = datetime.datetime.combine(datetime.date.min, sorted_readings[0].start)
+            start = datetime.datetime.combine(
+                datetime.date.min, sorted_readings[0].start)
             duration = end - start
-            final_blocks[date] = IntervalBlock(date, duration, sorted_readings)
+            final_blocks[date] = IntervalBlock(
+                date, duration, sorted_readings)
         return GreenButtonData(final_blocks)
