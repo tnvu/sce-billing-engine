@@ -109,6 +109,8 @@ __tou_periods_tou_d_5_8pm_prime: &__tou_periods_tou_d_5_8pm_prime
     - [WEEKEND_HOLIDAY, WINTER, MID_PEAK,       17, 20]
     - [WEEKEND_HOLIDAY, WINTER, OFF_PEAK,       20, 24]
 
+CARE_discount: -0.325
+
 TOU_D_4_9PM:
   allocations: *__allocations
   rates_table: *__rates_table_tou_d_4_9pm
