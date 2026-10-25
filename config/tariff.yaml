@@ -91,7 +91,7 @@ __tou_periods_tou_d_4_9pm_prime: &__tou_periods_tou_d_4_9pm_prime
     - [WEEKEND_HOLIDAY, WINTER, SUPER_OFF_PEAK,  8, 16]
     - [WEEKEND_HOLIDAY, WINTER, MID_PEAK,       16, 21]
     - [WEEKEND_HOLIDAY, WINTER, OFF_PEAK,       21, 24]
-__tou_periods_tou_d_5_8pm_prime: &__tou_periods_tou_d_5_8pm_prime
+__tou_periods_tou_d_5_8pm_prime: &__tou_periods_tou_d_5_8pm
   header: *__tou_periods_header
   rows:
     - [WEEKDAY,         SUMMER, OFF_PEAK,        0, 17]
@@ -119,4 +119,4 @@ TOU_D_4_9PM:
 TOU_D_5_8PM:
   allocations: *__allocations
   rates_table: *__rates_table_tou_d_5_8pm
-  tou_periods: *__tou_periods_tou_d_4_9pm_prime
+  tou_periods: *__tou_periods_tou_d_5_8pm
