@@ -52,7 +52,7 @@ class ResidentialPlan(ABC):
         for rates_table in self.plan['rates_tables']:
             effective_date = datetime.datetime.strptime(
                 rates_table['effective_date'], "%Y/%m/%d").date()
-            parsed_table = self.parse_table(rates_table)
+            parsed_table = self._parse_table(rates_table)
             parsed_tables.append([effective_date, parsed_table])
         self.rates_tables = sorted(
             parsed_tables, key=lambda x: x[0], reverse=True)
@@ -63,24 +63,11 @@ class ResidentialPlan(ABC):
                 return rates_table[1]
         raise ValueError(f"Unable to find rates table for DATE={date}")
 
-    def get_row(self,
-                rates_table,
-                name: str,
-                season=None,
-                tou_period=None) -> dict:
-        rows = [r for r in rates_table if r['name'] == name]
-        if season is not None:
-            rows = [r for r in rows if r['Season'] == season]
-        if tou_period is not None:
-            rows = [r for r in rows if r['TOUPeriod'] == tou_period]
-        if len(rows) != 1:
-            raise KeyError(f"Number of rows != 1: {rows}")
-        result = rows[0]
-        return result
-
     def get_base_services_charge_rate(self, rates_table) -> float:
-        row = self.get_row(rates_table, 'base_services_charge')
-        rate = row['Total']
+        rows = self._get_rows(rates_table, 'base_services_charge')
+        if len(rows) != 1:
+            raise KeyError(f"Unable to find base_services_charge_rate: {rows}")
+        rate = rows[0]['Total']
         if self.discount_program == DiscountProgram.CARE:
             rate -= 0.209 # CARE surcharge
             rate -= 0.069 # Base Services Charge Surcharge
@@ -94,7 +81,7 @@ class ResidentialPlan(ABC):
         pass
 
     @staticmethod
-    def parse_table(raw_table: dict) -> list:
+    def _parse_table(raw_table: dict) -> list:
         raw_header = raw_table['header']
         raw_rows = raw_table['rows']
 
@@ -112,7 +99,12 @@ class ResidentialPlan(ABC):
         return validated_table
 
     @staticmethod
-    def get_season(date: datetime.date) -> Season:
+    def _get_rows(rates_table, name: str):
+        rows = [r for r in rates_table if r['name'] == name]
+        return rows
+
+    @staticmethod
+    def _get_season(date: datetime.date) -> Season:
         if 6 <= date.month <= 9:
             return Season.SUMMER
         return Season.WINTER
@@ -120,15 +112,27 @@ class ResidentialPlan(ABC):
 class ScheduleTOUDPlan(ResidentialPlan):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.tou_periods = self.parse_table(self.plan['tou_periods'])
+        self.tou_periods = self._parse_table(self.plan['tou_periods'])
         for row in self.tou_periods:
             for k in ('start', 'end'):
                 if row[k] == 24: row[k] = datetime.time.max
                 else:            row[k] = datetime.time(row[k])
 
+    def get_row(self, rates_table, name, season=None, tou_period=None):
+        rows = self._get_rows(rates_table, name)
+        if season is not None:
+            rows = [r for r in rows if r['Season'] == season]
+        if tou_period is not None:
+            rows = [r for r in rows if r['TOUPeriod'] == tou_period]
+        if len(rows) != 1:
+            raise KeyError(f"Unable to retrieve single row: {name}, {season}, "
+                           f"{tou_period}, rows={rows}")
+        result = rows[0]
+        return result
+
     def get_tou_periods(self, date: datetime.date) -> list:
         day_type = self.get_day_type(date)
-        season = self.get_season(date)
+        season = self._get_season(date)
         results = [row for row in self.tou_periods
                    if row['DayType'] == day_type and row['Season'] == season]
         return results
@@ -183,12 +187,12 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
     def __init__(self, region: int, **kwargs):
         super().__init__(**kwargs)
         self.region = region
-        self.allocations = self.parse_table(self.plan['allocations'])
+        self.allocations = self._parse_table(self.plan['allocations'])
 
     def get_allocation(self,
                        date: datetime.date,
                        alloc_type='baseline_basic') -> float:
-        season = self.get_season(date)
+        season = self._get_season(date)
         alloc = None
         for row in self.allocations:
             if row['Season'] == season and row['region'] == self.region:
