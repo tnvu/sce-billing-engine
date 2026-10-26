@@ -240,8 +240,8 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
                     season, tou_period)
                 energy_charge_generation[
                     (season, tou_period, generation_rate)] += kwh
-            # CA climate credit
-            if date.month in (8, 9):
+            # CA climate credit - apply in Aug, Sept
+            if date.month in (8, 9) and date.day == 1:
                 ca_climate_credit = self.get_row(
                     'california_climate_credit')['Total']
 
