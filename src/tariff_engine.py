@@ -38,7 +38,7 @@ class ResidentialPlan(ABC):
     def __init__(self,
                  tariffs: dict,
                  plan: str,
-                 medical_baseline_units = 0,
+                 medical_baseline_units: int = 0,
                  discount_program: str = "",
                  **kwargs):
         super().__init__(**kwargs)
@@ -48,10 +48,27 @@ class ResidentialPlan(ABC):
         self.discount_program = DiscountProgram(discount_program) \
             if discount_program else None
 
-        self.rates_table = self.parse_table(self.plan['rates_table'])
+        parsed_tables = []
+        for rates_table in self.plan['rates_tables']:
+            effective_date = datetime.datetime.strptime(
+                rates_table['effective_date'], "%Y/%m/%d").date()
+            parsed_table = self.parse_table(rates_table)
+            parsed_tables.append([effective_date, parsed_table])
+        self.rates_tables = sorted(
+            parsed_tables, key=lambda x: x[0], reverse=True)
 
-    def get_row(self, name: str, season=None, tou_period=None):
-        rows = [r for r in self.rates_table if r['name'] == name]
+    def get_rates_table(self, date: datetime.date) -> dict:
+        for rates_table in self.rates_tables:
+            if date > rates_table[0]:
+                return rates_table[1]
+        raise ValueError(f"Unable to find rates table for DATE={date}")
+
+    def get_row(self,
+                rates_table,
+                name: str,
+                season=None,
+                tou_period=None) -> dict:
+        rows = [r for r in rates_table if r['name'] == name]
         if season is not None:
             rows = [r for r in rows if r['Season'] == season]
         if tou_period is not None:
@@ -61,8 +78,8 @@ class ResidentialPlan(ABC):
         result = rows[0]
         return result
 
-    def get_base_services_charge_rate(self):
-        row = self.get_row('base_services_charge')
+    def get_base_services_charge_rate(self, rates_table) -> float:
+        row = self.get_row(rates_table, 'base_services_charge')
         rate = row['Total']
         if self.discount_program == DiscountProgram.CARE:
             rate -= 0.209 # CARE surcharge
@@ -77,7 +94,7 @@ class ResidentialPlan(ABC):
         pass
 
     @staticmethod
-    def parse_table(raw_table):
+    def parse_table(raw_table: dict) -> list:
         raw_header = raw_table['header']
         raw_rows = raw_table['rows']
 
@@ -95,7 +112,7 @@ class ResidentialPlan(ABC):
         return validated_table
 
     @staticmethod
-    def get_season(date: datetime.date):
+    def get_season(date: datetime.date) -> Season:
         if 6 <= date.month <= 9:
             return Season.SUMMER
         return Season.WINTER
@@ -109,7 +126,7 @@ class ScheduleTOUDPlan(ResidentialPlan):
                 if row[k] == 24: row[k] = datetime.time.max
                 else:            row[k] = datetime.time(row[k])
 
-    def get_tou_periods(self, date: datetime.date):
+    def get_tou_periods(self, date: datetime.date) -> list:
         day_type = self.get_day_type(date)
         season = self.get_season(date)
         results = [row for row in self.tou_periods
@@ -156,11 +173,10 @@ class ScheduleTOUDPlan(ResidentialPlan):
         return holidays
 
     @classmethod
-    def get_day_type(cls, date: datetime.date):
+    def get_day_type(cls, date: datetime.date) -> DayType:
         if date.weekday() in (5, 6) or date in cls.holidays(date.year):
             return DayType.WEEKEND_HOLIDAY
         return DayType.WEEKDAY
-
 
                 
 class TOUDStandardPlan(ScheduleTOUDPlan):
@@ -169,7 +185,9 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
         self.region = region
         self.allocations = self.parse_table(self.plan['allocations'])
 
-    def get_allocation(self, date, alloc_type='baseline_basic') -> float:
+    def get_allocation(self,
+                       date: datetime.date,
+                       alloc_type='baseline_basic') -> float:
         season = self.get_season(date)
         alloc = None
         for row in self.allocations:
@@ -182,26 +200,27 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
             self.tariffs['MEDICAL_BASELINE_ALLOCATION']
         return alloc
 
-    def get_baseline_credit_rate(self, date):
-        row = self.get_row('baseline_credit')
+    def get_baseline_credit_rate(
+            self, rates_table, date: datetime.date) -> float:
+        row = self.get_row(rates_table, 'baseline_credit')
         rate = row['Total']
         return rate
 
-    def get_energy_charge_delivery_rate(self, season, tou_period) -> float:
+    def get_energy_charge_delivery_rate(self, rates_table, season, tou_period) -> float:
         energy_charge_row = self.get_row(
-            'energy_charge_delivery', season, tou_period)
+            rates_table, 'energy_charge_delivery', season, tou_period)
         rate = energy_charge_row['Total']
         if self.medical_baseline_units > 0 or \
                 self.discount_program == DiscountProgram.CARE:
             rate -= energy_charge_row['WFC'] # Wildfire Fund NBC
         else:
-            rate += self.get_row('fixed_recovery_charge')['Total']
-            rate += self.get_row('MCAM_charge')['Total']
+            rate += self.get_row(rates_table, 'fixed_recovery_charge')['Total']
+            rate += self.get_row(rates_table, 'MCAM_charge')['Total']
         return rate
 
-    def get_energy_charge_generation_rate(self, season, tou_period) -> float:
+    def get_energy_charge_generation_rate(self, rates_table, season, tou_period) -> float:
         energy_charge_row = self.get_row(
-            'energy_charge_generation', season, tou_period)
+            rates_table, 'energy_charge_generation', season, tou_period)
         rate = energy_charge_row['Total']
         return rate
 
@@ -220,11 +239,13 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
 
         for block in billing_period:
             date = block.start
+            rates_table = self.get_rates_table(date)
+
             # Base Services Charge
-            bsc_rate = self.get_base_services_charge_rate()
+            bsc_rate = self.get_base_services_charge_rate(rates_table)
             base_services_charge[bsc_rate] += 1
             # Baseline Credit
-            bc_rate = self.get_baseline_credit_rate(date)
+            bc_rate = self.get_baseline_credit_rate(rates_table, date)
             baseline_credit[bc_rate][0] += block.delivered_kwh()
             baseline_credit[bc_rate][1] += self.get_allocation(date)
             # Energy Charge Delivery & Generation
@@ -233,17 +254,17 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
                     row['Season'], row['TOUPeriod'], row['start'], row['end'])
                 kwh = block.delivered_kwh(start, end)
                 delivery_rate = self.get_energy_charge_delivery_rate(
-                    season, tou_period)
+                    rates_table, season, tou_period)
                 energy_charge_delivery[
                     (season, tou_period, delivery_rate)] += kwh
                 generation_rate = self.get_energy_charge_generation_rate(
-                    season, tou_period)
+                    rates_table, season, tou_period)
                 energy_charge_generation[
                     (season, tou_period, generation_rate)] += kwh
             # CA climate credit - apply in Aug, Sept
             if date.month in (8, 9) and date.day == 1:
                 ca_climate_credit = self.get_row(
-                    'california_climate_credit')['Total']
+                    rates_table, 'california_climate_credit')['Total']
 
         total_base_services_charge = 0.0
         for rate, num_days in base_services_charge.items():

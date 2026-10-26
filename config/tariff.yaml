@@ -24,7 +24,8 @@ MEDICAL_DISCOUNT: -0.11 # %
 
 __rates_table_tou_d_header: &__rates_table_tou_d_header [name, Season, TOUPeriod, trans, distrbtn, NSGC, NDC, PPPC, CIA, WFC, DWRA, PUCRF, Total]
 
-__rates_table_tou_d_4_9pm: &__rates_table_tou_d_4_9pm
+__rates_table_tou_d_4_9pm_2026_06_01: &__rates_table_tou_d_4_9pm_2026_06_01
+  effective_date: "2026/06/01"
   header: *__rates_table_tou_d_header
   rows:
     - [energy_charge_generation,  SUMMER,        ON_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.25321] # $/kWh
@@ -49,7 +50,8 @@ __rates_table_tou_d_4_9pm: &__rates_table_tou_d_4_9pm
     - [FERA_discount,               null,           null,    null,   1.00000,    null,    null,    null,    null,    null,    null,    null,   1.00000] # %
 
 
-__rates_table_tou_d_5_8pm: &__rates_table_tou_d_5_8pm
+__rates_table_tou_d_5_8pm_2026_06_01: &__rates_table_tou_d_5_8pm_2026_06_01
+  effective_date: "2026/06/01"
   header: *__rates_table_tou_d_header
   rows:
     - [energy_charge_generation,  SUMMER,        ON_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.41155] # $/kWh
@@ -113,10 +115,10 @@ CARE_discount: -0.325
 
 TOU_D_4_9PM:
   allocations: *__allocations
-  rates_table: *__rates_table_tou_d_4_9pm
+  rates_table: [*__rates_table_tou_d_4_9pm_2026_06_01]
   tou_periods: *__tou_periods_tou_d_4_9pm_prime
 
 TOU_D_5_8PM:
   allocations: *__allocations
-  rates_table: *__rates_table_tou_d_5_8pm
+  rates_tables: [*__rates_table_tou_d_5_8pm_2026_06_01]
   tou_periods: *__tou_periods_tou_d_5_8pm
