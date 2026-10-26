@@ -48,7 +48,30 @@ __rates_table_tou_d_4_9pm_2026_06_01: &__rates_table_tou_d_4_9pm_2026_06_01
     - [california_climate_credit,   null,           null,    null, -36.00000,    null,    null,    null,    null,    null,    null,    null, -36.00000]
     - [CARE_discount,               null,           null,    null,   1.00000,    null,    null,    null,    null,    null,    null,    null,   1.00000] # %
     - [FERA_discount,               null,           null,    null,   1.00000,    null,    null,    null,    null,    null,    null,    null,   1.00000] # %
-
+__rates_table_tou_d_4_9pm_2026_01_01: &__rates_table_tou_d_4_9pm_2026_01_01
+  effective_date: "2026/01/01"
+  header: *__rates_table_tou_d_header
+  rows:
+    - [energy_charge_generation,  SUMMER,        ON_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.25448] # $/kWh
+    - [energy_charge_generation,  SUMMER,       MID_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.13441] # $/kWh
+    - [energy_charge_generation,  SUMMER,       OFF_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.07360] # $/kWh
+    - [energy_charge_generation,  WINTER,       MID_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.18077] # $/kWh
+    - [energy_charge_generation,  WINTER,       OFF_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.10212] # $/kWh
+    - [energy_charge_generation,  WINTER, SUPER_OFF_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.08364] # $/kWh
+    - [energy_charge_delivery,    SUMMER,        ON_PEAK, 0.02586,   0.28446, 0.00829, 0.00003, 0.00527, 0.00000, 0.00591, 0.00000, 0.00100,   0.33082] # $/kWh
+    - [energy_charge_delivery,    SUMMER,       MID_PEAK, 0.02586,   0.28446, 0.00829, 0.00003, 0.00527, 0.00000, 0.00591, 0.00000, 0.00100,   0.33082] # $/kWh
+    - [energy_charge_delivery,    SUMMER,       OFF_PEAK, 0.02586,   0.22702, 0.00829, 0.00003, 0.00527, 0.00000, 0.00591, 0.00000, 0.00100,   0.27338] # $/kWh
+    - [energy_charge_delivery,    WINTER,       MID_PEAK, 0.02586,   0.28446, 0.00829, 0.00003, 0.00527, 0.00000, 0.00591, 0.00000, 0.00100,   0.33082] # $/kWh
+    - [energy_charge_delivery,    WINTER,       OFF_PEAK, 0.02586,   0.22702, 0.00829, 0.00003, 0.00527, 0.00000, 0.00591, 0.00000, 0.00100,   0.27338] # $/kWh
+    - [energy_charge_delivery,    WINTER, SUPER_OFF_PEAK, 0.02586,   0.20636, 0.00829, 0.00003, 0.00527, 0.00000, 0.00591, 0.00000, 0.00100,   0.25272] # $/kWh
+    - [baseline_credit,             null,           null,    null,  -0.10108,    null,    null,    null,    null,    null,    null,    null,  -0.10108] # $/kWh
+    - [fixed_recovery_charge,       null,           null,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.00619] # $/kWh
+    - [MCAM_charge,                 null,           null,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.00223] # $/kWh
+    - [base_services_charge,        null,           null,    null,   0.42400, 0.00000, 0.00000, 0.37000,    null,    null,    null,    null,   0.79400] # $/Meter/Day
+    - [bsc_adjustment,              null,           null,    null,  -0.33200,    null,    null,    null,    null,    null,    null,    null,  -0.33200] # $/Meter/Day
+    - [california_climate_credit,   null,           null,    null, -36.00000,    null,    null,    null,    null,    null,    null,    null, -36.00000]
+    - [CARE_discount,               null,           null,    null,   1.00000,    null,    null,    null,    null,    null,    null,    null,   1.00000] # %
+    - [FERA_discount,               null,           null,    null,   1.00000,    null,    null,    null,    null,    null,    null,    null,   1.00000] # %
 
 __rates_table_tou_d_5_8pm_2026_06_01: &__rates_table_tou_d_5_8pm_2026_06_01
   effective_date: "2026/06/01"
@@ -71,6 +94,30 @@ __rates_table_tou_d_5_8pm_2026_06_01: &__rates_table_tou_d_5_8pm_2026_06_01
     - [MCAM_charge,                 null,           null,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.00223] # $/kWh
     - [base_services_charge,        null,           null,    null,   0.42900, 0.00000, 0.00000, 0.36500,    null,    null,    null,    null,   0.79400] # $/Meter/Day
     - [bsc_adjustment,              null,           null,    null,  -0.32700,    null,    null,    null,    null,    null,    null,    null,  -0.32700] # $/Meter/Day
+    - [california_climate_credit,   null,           null,    null, -36.00000,    null,    null,    null,    null,    null,    null,    null, -36.00000]
+    - [CARE_discount,               null,           null,    null,   1.00000,    null,    null,    null,    null,    null,    null,    null,   1.00000] # %
+    - [FERA_discount,               null,           null,    null,   1.00000,    null,    null,    null,    null,    null,    null,    null,   1.00000] # %
+__rates_table_tou_d_5_8pm_2026_01_01: &__rates_table_tou_d_5_8pm_2026_01_01
+  effective_date: "2026/01/01"
+  header: *__rates_table_tou_d_header
+  rows:
+    - [energy_charge_generation,  SUMMER,        ON_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.41297] # $/kWh
+    - [energy_charge_generation,  SUMMER,       MID_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.21262] # $/kWh
+    - [energy_charge_generation,  SUMMER,       OFF_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.06285] # $/kWh
+    - [energy_charge_generation,  WINTER,       MID_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.27710] # $/kWh
+    - [energy_charge_generation,  WINTER,       OFF_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.09955] # $/kWh
+    - [energy_charge_generation,  WINTER, SUPER_OFF_PEAK,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.06937] # $/kWh
+    - [energy_charge_delivery,    SUMMER,        ON_PEAK, 0.02586,   0.28514, 0.00829, 0.00003, 0.00527, 0.00000, 0.00591, 0.00000, 0.00100,   0.33150] # $/kWh
+    - [energy_charge_delivery,    SUMMER,       MID_PEAK, 0.02586,   0.28514, 0.00829, 0.00003, 0.00527, 0.00000, 0.00591, 0.00000, 0.00100,   0.33150] # $/kWh
+    - [energy_charge_delivery,    SUMMER,       OFF_PEAK, 0.02586,   0.23641, 0.00829, 0.00003, 0.00527, 0.00000, 0.00591, 0.00000, 0.00100,   0.28277] # $/kWh
+    - [energy_charge_delivery,    WINTER,       MID_PEAK, 0.02586,   0.28514, 0.00829, 0.00003, 0.00527, 0.00000, 0.00591, 0.00000, 0.00100,   0.33150] # $/kWh
+    - [energy_charge_delivery,    WINTER,       OFF_PEAK, 0.02586,   0.23641, 0.00829, 0.00003, 0.00527, 0.00000, 0.00591, 0.00000, 0.00100,   0.28277] # $/kWh
+    - [energy_charge_delivery,    WINTER, SUPER_OFF_PEAK, 0.02586,   0.21002, 0.00829, 0.00003, 0.00527, 0.00000, 0.00591, 0.00000, 0.00100,   0.25638] # $/kWh
+    - [baseline_credit,             null,           null,    null,  -0.10108,    null,    null,    null,    null,    null,    null,    null,  -0.10108] # $/kWh
+    - [fixed_recovery_charge,       null,           null,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.00619] # $/kWh
+    - [MCAM_charge,                 null,           null,    null,      null,    null,    null,    null,    null,    null,    null,    null,   0.00223] # $/kWh
+    - [base_services_charge,        null,           null,    null,   0.42400, 0.00000, 0.00000, 0.37000,    null,    null,    null,    null,   0.79400] # $/Meter/Day
+    - [bsc_adjustment,              null,           null,    null,  -0.33200,    null,    null,    null,    null,    null,    null,    null,  -0.33200] # $/Meter/Day
     - [california_climate_credit,   null,           null,    null, -36.00000,    null,    null,    null,    null,    null,    null,    null, -36.00000]
     - [CARE_discount,               null,           null,    null,   1.00000,    null,    null,    null,    null,    null,    null,    null,   1.00000] # %
     - [FERA_discount,               null,           null,    null,   1.00000,    null,    null,    null,    null,    null,    null,    null,   1.00000] # %
@@ -114,11 +161,11 @@ __tou_periods_tou_d_5_8pm_prime: &__tou_periods_tou_d_5_8pm
 CARE_discount: -0.325
 
 TOU_D_4_9PM:
-  allocations: *__allocations
-  rates_table: [*__rates_table_tou_d_4_9pm_2026_06_01]
-  tou_periods: *__tou_periods_tou_d_4_9pm_prime
+  allocations:  *__allocations
+  rates_tables: [*__rates_table_tou_d_4_9pm_2026_06_01, *__rates_table_tou_d_4_9pm_2026_01_01]
+  tou_periods:  *__tou_periods_tou_d_4_9pm_prime
 
 TOU_D_5_8PM:
-  allocations: *__allocations
-  rates_tables: [*__rates_table_tou_d_5_8pm_2026_06_01]
-  tou_periods: *__tou_periods_tou_d_5_8pm
+  allocations:  *__allocations
+  rates_tables: [*__rates_table_tou_d_5_8pm_2026_06_01, *__rates_table_tou_d_5_8pm_2026_01_01]
+  tou_periods:  *__tou_periods_tou_d_5_8pm
