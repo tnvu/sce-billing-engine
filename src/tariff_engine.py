@@ -184,15 +184,21 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
         rate = row['Total']
         return rate
 
-    def get_energy_charge_delivery_rate(self, season, tou_period):
-        energy_charge_delivery_row = self.get_row(
+    def get_energy_charge_delivery_rate(self, season, tou_period) -> float:
+        energy_charge_row = self.get_row(
             'energy_charge_delivery', season, tou_period)
-        rate = energy_charge_delivery_row['Total']
+        rate = energy_charge_row['Total']
         if self.discount_program == DiscountProgram.CARE:
-            rate -= energy_charge_delivery_row['WFC'] # Wildfire Fund Non-Bypassable Charge
+            rate -= energy_charge_row['WFC'] # Wildfire Fund Non-Bypassable Charge
         else:
             rate += self.get_row('fixed_recovery_charge')['Total']
             rate += self.get_row('MCAM_charge')['Total']
+        return rate
+
+    def get_energy_charge_generation_rate(self, season, tou_period) -> float:
+        energy_charge_row = self.get_row(
+            'energy_charge_generation', season, tou_period)
+        rate = energy_charge_row['Total']
         return rate
 
     def calculate_bill(self, billing_period: Sequence[IntervalBlock]
@@ -203,7 +209,10 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
         energy_charge_delivery: Mapping[
             tuple[Season, TOUPeriod, float], float
             ] = defaultdict(lambda: 0.0)
-        
+        energy_charge_generation: Mapping[
+            tuple[Season, TOUPeriod, float], float
+            ] = defaultdict(lambda: 0.0)
+
         for block in billing_period:
             date = block.start
             # Base Services Charge
@@ -213,11 +222,14 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
             bc_rate = self.get_baseline_credit_rate(date)
             baseline_credit[bc_rate][0] += block.delivered_kwh()
             baseline_credit[bc_rate][1] += self.get_allocation(date)
-            # Energy Charge Delivery
+            # Energy Charge Delivery & Generation
             for row in self.get_tou_periods(date):
                 (season, tou_period, start, end) = (row['Season'], row['TOUPeriod'], row['start'], row['end'])
-                rate = self.get_energy_charge_delivery_rate(season, tou_period)
-                energy_charge_delivery[(season, tou_period, rate)] += block.delivered_kwh(start, end)
+                kwh = block.delivered_kwh(start, end)
+                delivery_rate = self.get_energy_charge_delivery_rate(season, tou_period)
+                energy_charge_delivery[(season, tou_period, delivery_rate)] += kwh
+                generation_rate = self.get_energy_charge_generation_rate(season, tou_period)
+                energy_charge_generation[(season, tou_period, generation_rate)] += kwh
 
         total_base_services_charge = 0.0
         for rate, num_days in base_services_charge.items():
@@ -231,8 +243,15 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
         for (season, tou_period, rate), kwh in energy_charge_delivery.items():
             total_energy_charge_delivery[(season, tou_period)][0] += kwh
             total_energy_charge_delivery[(season, tou_period)][1] += rate * kwh
+        total_energy_charge_generation: Mapping[
+            tuple[Season, TOUPeriod],
+            list[float]] = defaultdict(lambda: [0, 0])
+        for (season, tou_period, rate), kwh in energy_charge_generation.items():
+            total_energy_charge_generation[(season, tou_period)][0] += kwh
+            total_energy_charge_generation[(season, tou_period)][1] += rate * kwh
         total = sum([total_base_services_charge,
                      total_baseline_credit,
-                     sum([v[1] for v in total_energy_charge_delivery.values()])
+                     sum([v[1] for v in total_energy_charge_delivery.values()]),
+                     sum([v[1] for v in total_energy_charge_generation.values()])
                      ])            
         return total
