@@ -6,6 +6,9 @@ from typing import Mapping, Sequence
 
 from green_button import IntervalBlock
 
+HB_UUT = 0.05 # %
+CA_STATE_TAX = 0.00030 # $/kWh
+
 class Season(StrEnum):
     SUMMER = "SUMMER"
     WINTER = "WINTER"
@@ -188,8 +191,9 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
         energy_charge_row = self.get_row(
             'energy_charge_delivery', season, tou_period)
         rate = energy_charge_row['Total']
-        if self.discount_program == DiscountProgram.CARE:
-            rate -= energy_charge_row['WFC'] # Wildfire Fund Non-Bypassable Charge
+        if self.medical_baseline_units > 0 or \
+                self.discount_program == DiscountProgram.CARE:
+            rate -= energy_charge_row['WFC'] # Wildfire Fund NBC
         else:
             rate += self.get_row('fixed_recovery_charge')['Total']
             rate += self.get_row('MCAM_charge')['Total']
@@ -212,6 +216,7 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
         energy_charge_generation: Mapping[
             tuple[Season, TOUPeriod, float], float
             ] = defaultdict(lambda: 0.0)
+        ca_climate_credit = 0.0
 
         for block in billing_period:
             date = block.start
@@ -224,12 +229,21 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
             baseline_credit[bc_rate][1] += self.get_allocation(date)
             # Energy Charge Delivery & Generation
             for row in self.get_tou_periods(date):
-                (season, tou_period, start, end) = (row['Season'], row['TOUPeriod'], row['start'], row['end'])
+                (season, tou_period, start, end) = (
+                    row['Season'], row['TOUPeriod'], row['start'], row['end'])
                 kwh = block.delivered_kwh(start, end)
-                delivery_rate = self.get_energy_charge_delivery_rate(season, tou_period)
-                energy_charge_delivery[(season, tou_period, delivery_rate)] += kwh
-                generation_rate = self.get_energy_charge_generation_rate(season, tou_period)
-                energy_charge_generation[(season, tou_period, generation_rate)] += kwh
+                delivery_rate = self.get_energy_charge_delivery_rate(
+                    season, tou_period)
+                energy_charge_delivery[
+                    (season, tou_period, delivery_rate)] += kwh
+                generation_rate = self.get_energy_charge_generation_rate(
+                    season, tou_period)
+                energy_charge_generation[
+                    (season, tou_period, generation_rate)] += kwh
+            # CA climate credit
+            if date.month in (8, 9):
+                ca_climate_credit = self.get_row(
+                    'california_climate_credit')['Total']
 
         total_base_services_charge = 0.0
         for rate, num_days in base_services_charge.items():
@@ -243,15 +257,24 @@ class TOUDStandardPlan(ScheduleTOUDPlan):
         for (season, tou_period, rate), kwh in energy_charge_delivery.items():
             total_energy_charge_delivery[(season, tou_period)][0] += kwh
             total_energy_charge_delivery[(season, tou_period)][1] += rate * kwh
+        # TODO(thien): Verify that the CARE discount is calculated correctly
+        care_discount = self.tariffs['CARE_discount'] * \
+                sum([v[1] for v in total_energy_charge_delivery.values()])
         total_energy_charge_generation: Mapping[
             tuple[Season, TOUPeriod],
             list[float]] = defaultdict(lambda: [0, 0])
         for (season, tou_period, rate), kwh in energy_charge_generation.items():
             total_energy_charge_generation[(season, tou_period)][0] += kwh
             total_energy_charge_generation[(season, tou_period)][1] += rate * kwh
-        total = sum([total_base_services_charge,
-                     total_baseline_credit,
-                     sum([v[1] for v in total_energy_charge_delivery.values()]),
-                     sum([v[1] for v in total_energy_charge_generation.values()])
-                     ])            
+        subtotal = sum([
+            total_base_services_charge,
+            total_baseline_credit,
+            sum([v[1] for v in total_energy_charge_delivery.values()]),
+            care_discount,
+            ca_climate_credit,
+            sum([v[1] for v in total_energy_charge_generation.values()])
+            ])
+        hb_uut = HB_UUT * subtotal
+        state_tax = CA_STATE_TAX * sum([v[0] for v in baseline_credit.values()])
+        total = sum([subtotal, hb_uut, state_tax])
         return total
